@@ -1,0 +1,2 @@
+#air3-line-clamp-171 > h2 > a
+#air3-line-clamp-173 > h2 > a
