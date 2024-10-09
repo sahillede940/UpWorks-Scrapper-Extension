@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap");
-body{
+body {
   width: 300px;
 }
 
@@ -8,4 +8,38 @@ body{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-size: 1rem;
+}
+
+/* src/App.scss */
+.btn {
+  @apply w-full text-white py-2 rounded mb-2;
+}
+
+.btn-primary {
+  @apply bg-blue-500 hover:bg-blue-600;
+}
+
+.btn-secondary {
+  @apply bg-indigo-500 hover:bg-indigo-600;
+}
+
+.btn-info {
+  @apply bg-green-500 hover:bg-green-600;
+}
+
+.btn-warning {
+  @apply bg-yellow-500 hover:bg-yellow-600;
+}
+
+.btn-success {
+  @apply bg-teal-500 hover:bg-teal-600;
+}
+
+.btn-danger {
+  @apply bg-red-500 hover:bg-red-600;
+}
+
+.btn-dark {
+  @apply bg-gray-800 hover:bg-gray-900;
 }
