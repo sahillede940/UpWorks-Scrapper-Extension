@@ -28,4 +28,5 @@ export interface CommentData {
   rating: number;
   job_id: string;
   description?: string;
+  postedOn: string;
 }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UpWork Scraper",
-  "description": "Scrape data from loaded HTML",
+  "description": "Scrape data from loaded HTML on Upwork",
   "version": "1.0",
   "action": {
     "default_popup": "index.html"
@@ -12,14 +12,5 @@
     "48": "icon.png",
     "128": "icon.png"
   },
-  "host_permissions": ["http://*/*", "https://*/*"],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ]
+  "host_permissions": ["http://*/*", "https://*/*"]
 }

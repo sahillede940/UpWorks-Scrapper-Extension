@@ -200,7 +200,10 @@ export const fetchJobDetails = async () => {
 
     // Fetch location and job ID
     const clientLocation =
-      popupElement?.querySelector('li[data-qa="client-location"] > strong')?.textContent?.trim() || "";
+      (popupElement?.querySelector('li[data-qa="client-location"] > div > span:first-child')?.textContent?.trim() ||
+        "") +
+      ", " +
+      (popupElement?.querySelector('li[data-qa="client-location"] > strong')?.textContent?.trim() || "");
 
     const url = popupElement?.querySelector('a[data-test="slider-open-in-new-window UpLink"]') as HTMLAnchorElement;
 
@@ -267,10 +270,27 @@ export const loopViewMore = async () => {
 
 // Function to get comments and related data
 export const getComments = async (): Promise<{ job_id: string; comments: CommentData[] }> => {
-  const result = await executeChromeScript(() => {
+  const result = await executeChromeScript(async () => {
+    let extraJobs_temp = document
+      .querySelector("div.extra-jobs-cards")
+      ?.querySelectorAll('section[data-cy="jobs"] > div[data-cy="job"]');
+
+    Array.from(extraJobs_temp || []).map((job) => {
+      const commentContainers = job.querySelectorAll("div.main > .text-body-sm") as NodeListOf<HTMLElement>;
+      commentContainers?.forEach((container) => {
+        let containerElement = container as HTMLElement;
+        containerElement
+          ?.querySelector('span[data-test="UpCTruncation"] > span > button[aria-expanded="false"]')
+          ?.dispatchEvent(new Event("click"));
+      });
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     const extraJobs = document
       .querySelector("div.extra-jobs-cards")
       ?.querySelectorAll('section[data-cy="jobs"] > div[data-cy="job"]');
+
     const url = document.querySelector('a[data-test="slider-open-in-new-window UpLink"]') as HTMLAnchorElement;
 
     function getJobIdFromUrl(url: string): string | null {
@@ -284,13 +304,14 @@ export const getComments = async (): Promise<{ job_id: string; comments: Comment
       const jobTitle = job.querySelector('span[data-test="JobLink"]')?.textContent?.trim() || "";
       const jobAnchor = job.querySelector('span[data-test="JobLink"] > a') as HTMLAnchorElement;
       const url = jobAnchor?.href || "";
-      const commentContainers = job.querySelectorAll("div.main > .text-body-sm");
+      const commentContainers = job.querySelectorAll("div.main > .text-body-sm") as NodeListOf<HTMLElement>;
 
       let clientComment = "";
       let freelancerComment = "";
 
       commentContainers?.forEach((container) => {
-        const containerElement = container as HTMLElement;
+        let containerElement = container as HTMLElement;
+
         if (containerElement?.innerText?.includes("To freelancer:")) {
           clientComment = containerElement.querySelector('span[data-test="UpCTruncation"] span')?.textContent || "";
         } else {
@@ -323,7 +344,13 @@ export const getComments = async (): Promise<{ job_id: string; comments: Comment
 };
 
 // Function to scrape description from a URL
-export const scrapeDescriptionFromUrl = async (url: string): Promise<string> => {
+
+interface CommentJobData {
+  description: string;
+  postedOn: string;
+}
+
+export const scrapeDescriptionFromUrl = async (url: string): Promise<CommentJobData> => {
   return new Promise((resolve, reject) => {
     chrome.tabs.create({ url: url, active: false }, (tab) => {
       const tabId = tab.id;
@@ -341,7 +368,11 @@ export const scrapeDescriptionFromUrl = async (url: string): Promise<string> => 
               target: { tabId: tabId },
               func: () => {
                 const descriptionElement = document.querySelector('div[data-test="Description"]') as HTMLElement;
-                return descriptionElement ? descriptionElement.innerText.trim() : "";
+                const postedOn = document.querySelector('div[data-test="PostedOn"]') as HTMLElement;
+                return {
+                  description: descriptionElement?.textContent?.trim() || "",
+                  postedOn: postedOn?.textContent?.trim()?.replace("\n", " ") || "",
+                };
               },
             },
             (results) => {
@@ -351,8 +382,10 @@ export const scrapeDescriptionFromUrl = async (url: string): Promise<string> => 
                 return reject(new Error(chrome.runtime.lastError.message));
               }
 
-              const description = results && results[0]?.result;
-              chrome.tabs.remove(tabId!, () => resolve(description || ""));
+              const { description, postedOn } = results[0]?.result || {};
+
+              chrome.tabs.remove(tabId!);
+              resolve({ description, postedOn } as CommentJobData);
             }
           );
         }
@@ -368,7 +401,6 @@ export const processComments = async (
   setNote: (msg: string | null) => void
 ) => {
   const { comments, job_id } = await getComments();
-  
 
   const totalComments = comments.length;
   let currentCommentIndex = 0;
@@ -378,14 +410,16 @@ export const processComments = async (
     setMessage(`Scraping Comment: ${currentCommentIndex} / ${totalComments}`);
     if (comment.url) {
       try {
-        const description = await scrapeDescriptionFromUrl(comment.url);
-        comment.description = description;
+        const commentJobData = (await scrapeDescriptionFromUrl(comment.url)) as CommentJobData;
+        comment.description = commentJobData.description;
+        comment.postedOn = commentJobData.postedOn;
       } catch (error) {
         console.error(`Error scraping description for URL ${comment.url}:`, error);
         comment.description = "";
       }
     }
   }
+  console.log("Comments:", comments);
 
   const commentsData = comments.map((comment) => ({
     job: job_id,
@@ -396,6 +430,7 @@ export const processComments = async (
     billed_amount: comment.billedAmount,
     job_title: comment.jobTitle,
     description: comment.description,
+    posted_on: comment.postedOn,
   }));
 
   try {
