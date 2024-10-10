@@ -9,7 +9,7 @@ import { Job, CommentData } from "../types";
 // Function to submit detailed job data
 export const submitDetailedJob = async (jobData: any) => {
   try {
-    const response = await axios.post(`${API_URL}/api/v1/detailed_jobs/`, {
+    const response = await axios.post(`${API_URL}/api/v1/jobs/`, {
       job: jobData,
     });
     return response.data;
@@ -21,7 +21,8 @@ export const submitDetailedJob = async (jobData: any) => {
 // Function to submit comments
 export const submitComments = async (job_id: string, commentsData: any[]) => {
   try {
-    const response = await axios.post(`${API_URL}/api/v1/comments/`, {
+    
+    const response = await axios.post(`${API_URL}/api/v1/jobs/comments/`, {
       job_id: job_id,
       comments: commentsData,
     });

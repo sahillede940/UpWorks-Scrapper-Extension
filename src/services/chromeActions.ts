@@ -434,6 +434,7 @@ export const processComments = async (
   }));
 
   try {
+    setMessage("Submitting Comments...");
     const res = await submitComments(job_id, commentsData);
     toast.success(res?.message);
     setMessage(null);
